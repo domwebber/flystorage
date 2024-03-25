@@ -1,5 +1,6 @@
 import {Readable} from "stream";
 import {
+    ChecksumIsNotAvailable,
     ChecksumOptions,
     CopyFileOptions,
     FileContents,
@@ -11,6 +12,7 @@ import {
     StatEntry,
     StorageAdapter,
     TemporaryUrlOptions,
+    UnableToGetChecksum,
     WriteOptions,
     normalizeExpiryToDate,
 } from "@flystorage/file-storage";
@@ -22,6 +24,7 @@ import {
 } from '@azure/storage-blob';
 import {resolveMimeType} from "@flystorage/stream-mime-type";
 import {dirname} from 'node:path';
+import { createHash } from "crypto";
 
 
 export type AzureStorageBlobStorageAdapterOptions = {
@@ -226,7 +229,18 @@ export class AzureStorageBlobStorageAdapter implements StorageAdapter {
         });
     }
     async checksum(path: string, options: ChecksumOptions): Promise<string> {
-        throw new Error('Not implemented');
+        const algo = (options.algo || "MD5").toUpperCase();
+
+        if (options.algo !== 'MD5') {
+            throw ChecksumIsNotAvailable.checksumNotSupported(algo);
+        }
+
+        const metadata = await this.blockClient(path).getProperties();
+        if (!metadata.contentMD5) {
+            throw UnableToGetChecksum.because(`Content-${options.algo} property is missing`, {})
+        }
+
+        return Buffer.from(metadata.contentMD5).toString('base64');
     }
     async mimeType(path: string, options: MimeTypeOptions): Promise<string> {
         const stat = await this.stat(path);
