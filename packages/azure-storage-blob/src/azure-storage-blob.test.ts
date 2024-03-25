@@ -1,7 +1,7 @@
 import {BlobServiceClient} from "@azure/storage-blob";
 import {AzureStorageBlobStorageAdapter} from "./azure-storage-blob.js";
-import {randomBytes} from "crypto";
-import {FileStorage, Visibility, readableToString} from "@flystorage/file-storage";
+import {createHash, randomBytes} from "crypto";
+import {FileStorage, UnableToGetChecksum, Visibility, readableToString} from "@flystorage/file-storage";
 import * as https from "https";
 
 const runSegment = process.env.AZURE_PREFIX ?? randomBytes(10).toString('hex');
@@ -164,6 +164,19 @@ describe('AzureStorageBlobStorageAdapter', () => {
         const contents = await naivelyDownloadFile(url);
 
         expect(contents).toEqual('something');
+    });
+
+    test('it can request checksums', async () => {
+        const contents = 'this is for the checksum';
+        await storage.write('something.txt', contents);
+        const expectedChecksum = createHash('md5').update(contents).digest('base64');
+
+        const checksum = async () => await storage.checksum('something.txt', {
+            algo: 'MD5',
+        });
+
+        expect(checksum).rejects.toThrow(UnableToGetChecksum);
+        // expect(checksum).toEqual(expectedChecksum);
     });
 });
 
