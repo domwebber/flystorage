@@ -4,6 +4,7 @@ import {
   CopyFileOptions,
   CreateDirectoryOptions,
   DirectoryListing,
+  errorToMessage,
   FileContents,
   FileInfo,
   FileStorage,
@@ -14,6 +15,26 @@ import {
   PublicUrlOptions,
   StatEntry,
   TemporaryUrlOptions,
+  UnableToCheckDirectoryExistence,
+  UnableToCheckFileExistence,
+  UnableToCopyFile,
+  UnableToCreateDirectory,
+  UnableToDeleteDirectory,
+  UnableToDeleteFile,
+  UnableToGetChecksum,
+  UnableToGetFileSize,
+  UnableToGetLastModified,
+  UnableToGetMimeType,
+  UnableToGetPublicUrl,
+  UnableToGetStat,
+  UnableToGetTemporaryUrl,
+  UnableToGetVisibility,
+  UnableToListDirectory,
+  UnableToMoveFile,
+  UnableToPrepareUploadRequest,
+  UnableToReadFile,
+  UnableToSetVisibility,
+  UnableToWriteFile,
   UploadRequest,
   UploadRequestOptions,
   VisibilityOptions,
@@ -21,6 +42,7 @@ import {
 } from '@flystorage/file-storage';
 import { Buffer } from "buffer";
 import { Readable } from "stream";
+import { UnableToResolveFilesystemMount } from "./errors.js";
 
 const FILESYSTEM_SCHEME_SEPARATOR = "://";
 
@@ -43,144 +65,333 @@ export class MountManager implements FileStoragePublicMethods {
   }
 
   public async write(path: string, contents: FileContents, options?: WriteOptions): Promise<void> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.write(relativePath, contents, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.write(relativePath, contents, options);
+    } catch (error) {
+      throw UnableToWriteFile.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath, options } },
+      );
+    }
   }
 
   public async read(path: string, options?: MiscellaneousOptions): Promise<Readable> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.read(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.read(relativePath, options);
+    } catch (error) {
+      throw UnableToReadFile.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async readToString(path: string, options?: MiscellaneousOptions): Promise<string> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.readToString(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.readToString(relativePath, options);
+    } catch (error) {
+      throw UnableToReadFile.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async readToUint8Array(path: string, options?: MiscellaneousOptions): Promise<Uint8Array> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.readToUint8Array(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.readToUint8Array(relativePath, options);
+    } catch (error) {
+      throw UnableToReadFile.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async readToBuffer(path: string, options?: MiscellaneousOptions): Promise<Buffer> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.readToBuffer(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.readToBuffer(relativePath, options);
+    } catch (error) {
+      throw UnableToReadFile.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async deleteFile(path: string, options?: MiscellaneousOptions): Promise<void> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.deleteFile(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.deleteFile(relativePath, options);
+    } catch (error) {
+      throw UnableToDeleteFile.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async createDirectory(path: string, options?: CreateDirectoryOptions): Promise<void> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.createDirectory(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.createDirectory(relativePath, options);
+    } catch (error) {
+      throw UnableToCreateDirectory.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath, options } },
+      );
+    }
   }
 
   public async deleteDirectory(path: string, options?: MiscellaneousOptions): Promise<void> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.deleteDirectory(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.deleteDirectory(relativePath, options);
+    } catch (error) {
+      throw UnableToDeleteDirectory.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async stat(path: string, options?: MiscellaneousOptions): Promise<StatEntry> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.stat(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.stat(relativePath, options);
+    } catch (error) {
+      throw UnableToGetStat.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async moveFile(from: string, to: string, options?: MoveFileOptions): Promise<void> {
     const { filesystem: sourceFilesystem, path: relativePath } = this.determineFilesystemAndPath(from);
     const { filesystem: destinationFilesystem, path: relativeToPath } = this.determineFilesystemAndPath(to);
 
-    if (sourceFilesystem !== destinationFilesystem) {
-      return this.moveFileAcrossFilesystems(from, to, options);
-    }
+    try {
+      if (sourceFilesystem !== destinationFilesystem) {
+        return await this.moveFileAcrossFilesystems(from, to, options);
+      }
 
-    return sourceFilesystem.moveFile(relativePath, relativeToPath, options);
+      return await sourceFilesystem.moveFile(relativePath, relativeToPath, options);
+    } catch (error) {
+      throw UnableToMoveFile.because(
+        errorToMessage(error),
+        { cause: error, context: { from, to } },
+      );
+    }
   }
 
   public async copyFile(source: string, destination: string, options?: CopyFileOptions): Promise<void> {
     const { filesystem: sourceFilesystem, path: relativePath } = this.determineFilesystemAndPath(source);
     const { filesystem: destinationFilesystem, path: relativeToPath } = this.determineFilesystemAndPath(destination);
 
-    if (sourceFilesystem !== destinationFilesystem) {
-      return this.copyFileAcrossFilesystems(source, destination, options);
-    }
+    try {
+      if (sourceFilesystem !== destinationFilesystem) {
+        return await this.copyFileAcrossFilesystems(source, destination, options);
+      }
 
-    return sourceFilesystem.copyFile(relativePath, relativeToPath, options);
+      return await sourceFilesystem.copyFile(relativePath, relativeToPath, options);
+    } catch (error) {
+      throw UnableToCopyFile.because(
+        errorToMessage(error),
+        { cause: error, context: { from: source, to: destination } },
+      );
+    }
   }
 
   public async changeVisibility(path: string, visibility: string, options?: VisibilityOptions): Promise<void> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.changeVisibility(relativePath, visibility, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.changeVisibility(relativePath, visibility, options);
+    } catch (error) {
+      throw UnableToSetVisibility.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath, visibility } },
+      );
+    }
   }
 
   public async visibility(path: string, options?: VisibilityOptions): Promise<string> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.visibility(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.visibility(relativePath, options);
+    } catch (error) {
+      throw UnableToGetVisibility.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async fileExists(path: string, options?: MiscellaneousOptions): Promise<boolean> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.fileExists(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.fileExists(relativePath, options);
+    } catch (error) {
+      throw UnableToCheckFileExistence.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public list(path: string, options?: ListOptions): DirectoryListing {
     const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    const innerListing = filesystem.list(relativePath, options);
 
-    const prefix = `${mountPoint}${FILESYSTEM_SCHEME_SEPARATOR}`;
-    const mapped = (async function* () {
-      for await (const entry of innerListing) {
-        yield { ...entry, path: `${prefix}${entry.path}` };
-      }
-    })();
+    try {
+      const innerListing = filesystem.list(relativePath, options);
+      const prefix = `${mountPoint}${FILESYSTEM_SCHEME_SEPARATOR}`;
+      const mapped = (async function* () {
+        for await (const entry of innerListing) {
+          yield { ...entry, path: `${prefix}${entry.path}` };
+        }
+      })();
 
-    return new DirectoryListing(mapped, path, options?.deep ?? false);
+      return new DirectoryListing(mapped, path, options?.deep ?? false);
+    } catch (error) {
+      throw UnableToListDirectory.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async statFile(path: string, options?: MiscellaneousOptions): Promise<FileInfo> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.statFile(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.statFile(relativePath, options);
+    } catch (error) {
+      throw UnableToGetStat.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async directoryExists(path: string, options?: MiscellaneousOptions): Promise<boolean> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.directoryExists(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.directoryExists(relativePath, options);
+    } catch (error) {
+      throw UnableToCheckDirectoryExistence.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async publicUrl(path: string, options?: PublicUrlOptions): Promise<string> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.publicUrl(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.publicUrl(relativePath, options);
+    } catch (error) {
+      throw UnableToGetPublicUrl.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath, options } },
+      );
+    }
   }
 
   public async temporaryUrl(path: string, options: TemporaryUrlOptions): Promise<string> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.temporaryUrl(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.temporaryUrl(relativePath, options);
+    } catch (error) {
+      throw UnableToGetTemporaryUrl.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath, options } },
+      );
+    }
   }
 
   public async prepareUpload(path: string, options: UploadRequestOptions): Promise<UploadRequest> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.prepareUpload(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.prepareUpload(relativePath, options);
+    } catch (error) {
+      throw UnableToPrepareUploadRequest.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath, options } },
+      );
+    }
   }
 
   public async checksum(path: string, options?: ChecksumOptions): Promise<string> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.checksum(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.checksum(relativePath, options);
+    } catch (error) {
+      throw UnableToGetChecksum.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath, options } },
+      );
+    }
   }
 
   public async mimeType(path: string, options?: MimeTypeOptions): Promise<string> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.mimeType(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.mimeType(relativePath, options);
+    } catch (error) {
+      throw UnableToGetMimeType.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath, options } },
+      );
+    }
   }
 
   public async lastModified(path: string, options?: MiscellaneousOptions): Promise<number> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.lastModified(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.lastModified(relativePath, options);
+    } catch (error) {
+      throw UnableToGetLastModified.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   public async fileSize(path: string, options?: MiscellaneousOptions): Promise<number> {
-    const { filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
-    return filesystem.fileSize(relativePath, options);
+    const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
+
+    try {
+      return await filesystem.fileSize(relativePath, options);
+    } catch (error) {
+      throw UnableToGetFileSize.because(
+        errorToMessage(error),
+        { cause: error, context: { path, mountPoint, relativePath } },
+      );
+    }
   }
 
   private async copyFileAcrossFilesystems(source: string, destination: string, options: CopyFileOptions = {}): Promise<void> {
@@ -207,7 +418,7 @@ export class MountManager implements FileStoragePublicMethods {
   private determineFilesystemAndPath(path: string): { mountPoint: string, filesystem: FileStorage, path: string } {
     const schemeSeparatorIndex = path.indexOf(FILESYSTEM_SCHEME_SEPARATOR);
     if (schemeSeparatorIndex === -1) {
-      throw new Error(`Invalid path: ${path}. Expected format: <filesystem>://<path>`);
+      throw UnableToResolveFilesystemMount.becauseTheSeparatorIsMissing(path, { context: { path } });
     }
 
     const mountPoint = path.substring(0, schemeSeparatorIndex);
@@ -215,7 +426,7 @@ export class MountManager implements FileStoragePublicMethods {
 
     const filesystem = this.filesystems[mountPoint];
     if (!filesystem) {
-      throw new Error(`Filesystem not found for mount point: ${mountPoint}`);
+      throw UnableToResolveFilesystemMount.becauseTheMountWasNotRegistered(mountPoint, { context: { path, mountPoint } });
     }
 
     return { mountPoint, filesystem, path: pathPart };
