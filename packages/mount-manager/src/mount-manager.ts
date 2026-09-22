@@ -60,10 +60,6 @@ export class MountManager implements FileStoragePublicMethods {
     this.filesystems = filesystems;
   }
 
-  setVisibility(path: string, visibility: string): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
   public async write(path: string, contents: FileContents, options?: WriteOptions): Promise<void> {
     const { mountPoint, filesystem, path: relativePath } = this.determineFilesystemAndPath(path);
 
